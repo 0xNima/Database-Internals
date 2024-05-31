@@ -89,3 +89,34 @@ database systems**, **measure the performance metrics that are important for you
   - **Buffer manager**: caches data pages in memory
   - **Recovery manager**: maintains the operation log and restores the system state in case of a failure
   - **Transaction** and **Lock Managers** are responsible for **concurrency control**. They guarantee <ins>logical and physical data integrity</ins> while ensuring that concurrent operations are executed as efficiently as possible.
+<br/>
+
+#### Memory- Versus Disk-Based DBMS
+* **In-memory** database management systems (sometimes called main memory DBMS) store data primarily in memory and use disk for <ins>recovery</ins> and <ins>logging</ins>.
+* **Disk-based** DBMS holds <ins>most</ins> of the data on disk and uses <ins>memory</ins> for <ins>caching disk contents</ins> or as a <ins>temporary storage</ins>.
+* Accessing memory has been and remains several orders of magnitude faster than accessing disk.
+* Benefits of using **mian memory** DBMS:
+  - Performance
+  - Comparatively low access costs
+  - Access granularity
+  - Simpler programming than on-disk DBMS
+* Drawbacks of using **main memory** DBMS:
+  - Main limiting factor is <ins>RAM volatility (lack of durability)</ins>
+  - Cost
+* There are ways to ensure durability but they require additional hardware resources and operational expertise.
+* In practice, disks are **easier to maintain** and have significantly **lower prices**. However, the availability and popularity of **Non-Volatile Memory (NVM)** could change this situation.
+* **NVM storage**: <ins>reduces</ins> or completely <ins>eliminates</ins> asymmetry between **read and write latencies**, <ins>improves</ins> **read and write performance**, and <ins>allows</ins> **byteaddressable access**.
+<br/>
+
+#### Durability in Memory-Based Stores
+* In-memory database systems maintain **backups** on **disk** to provide durability and prevent loss of volatile data.
+* An operation can be considered complete, **after** its results are written to a **sequential log file**.
+* To avoid replaying complete log contents during startup or after a crash, in-memory stores maintain a **backup copy**:
+  - Maintained as a **sorted disk-based structure**
+  - Modifications to this structure are often **asynchronous**
+  - Modifications applied in batches to reduce the number of I/O operations.
+  - During recovery, database contents can be restored from the backup and logs.
+* Log records are usually applied to backup in batches.
+* After the batch of log records is processed, backup holds a database **snapshot** for a <ins>specific point in time</ins>, and <ins>log contents</ins> up to this point can be <ins>discarded</ins>. This process is called **checkpointing**.
+* Disk-based databases with <ins>huge page cache</ins> still have limitations due to <ins>data layout</ins> and <ins>serialization</ins> in comparison with in-memory databases.
+* Disk-based storage structures often have the form of wide and short **trees** while memory-based implementations can choose from a larger pool of data structures and perform optimizations that would otherwise be impossible or difficult to implement on disk.
