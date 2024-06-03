@@ -120,3 +120,48 @@ database systems**, **measure the performance metrics that are important for you
 * After the batch of log records is processed, backup holds a database **snapshot** for a <ins>specific point in time</ins>, and <ins>log contents</ins> up to this point can be <ins>discarded</ins>. This process is called **checkpointing**.
 * Disk-based databases with <ins>huge page cache</ins> still have limitations due to <ins>data layout</ins> and <ins>serialization</ins> in comparison with in-memory databases.
 * Disk-based storage structures often have the form of wide and short **trees** while memory-based implementations can choose from a larger pool of data structures and perform optimizations that would otherwise be impossible or difficult to implement on disk.
+<br/>
+
+#### Column- Versus Row-Oriented DBMS
+* **Column-Oriented**: Tables partitioned **Vertically** (storing values belonging to the same column together).
+* **Row-Oriented**: Tables partitioned **Horizontally** (storing values belonging to the same row together).
+* In the below image (a) shows the values partitioned column-wise, and (b) shows the values partitioned row-wise.
+
+![Screenshot 2024-06-03 200559](https://github.com/0xNima/Database-Internals/assets/79907489/47511654-6b1d-4eb1-9c19-30d75d6a0df2)
+<br/>
+
+#### Row-Oriented Data Layout
+* Row-oriented database management systems store data in records or rows.
+* This approach works well for cases where several fields constitute the record (name, birth date, and phone number) uniquely identified by the key (in this example, a monotonically incremented number).
+* Since row-oriented stores are **most useful** in scenarios when we have to access data by row, storing entire rows together improves **spatial locality**.
+* **Spatial locality** is one of the Principles of Locality, stating that if a memory location is accessed, its nearby memory locations will be accessed in the near future.
+* Data on a persistent medium such as a disk is typically accessed block-wise (in other words, a minimal unit of disk access is a block). So in row-oriented DBMS, if we would like to **access <ins>an</ins> entire user record**, because of **Spatial Locality**, a single block will contain data for all columns of that record, which is great for such a scenario. **On the other hand**, if we want to access to **individual fields** of **multiple user records** (like **phone number** of a user), it makes queries **more expensive**.
+* Exampls: **PostgreSQL**, **MySQL**.
+<br/>
+
+#### Column-Oriented Data Layout
+* Values for the same column are stored **contiguously** on disk. For example, if we store historical stock market prices, price quotes are stored together.
+* Storing values for different columns in **separate files** or **file segments** allows **efficient queries by column**, since they **can be read in one pass** rather than consuming **entire rows** and discarding data for columns that weren’t queried.
+* Column-oriented stores are a good fit for analytical workloads that compute aggregate, such as finding trends and computing average values.
+<br/>
+
+#### Distinctions and Optimizations
+* Distinctions between row and column stores **are not** only in how the data is stored. Choosing the data layout is just one of the steps in a series of possible optimizations that columnar stores are targeting.
+* Reading multiple values for the same column in one run significantly improves cache utilization and computational efficiency.
+* Storing values that have the **same data type together** (e.g., numbers with other numbers, strings with other strings) offers a **better compression ratio**. Because we can choose the most efficient comparison algorithm for each data type.
+* To decide **whether to use a column- or a row-oriented store**, we need to understand our **access patterns**.
+  - If the read data is consumed in records (i.e., **most or all of the columns are requested**) and the workload consists mostly of **point queries** and **range scans**, the **row-oriented** approach is likely to give better results.
+  - If scans **span many rows**, or **compute aggregate over a subset of columns**, it is worth considering a **column-oriented** approach.
+* Examples: **MonetDB**, **C-Store**.
+<br/>
+
+#### Wide Column Stores
+* <ins>Column-oriented</ins> databases **should not** be mixed up with <ins>wide column</ins> stores.
+* **Wide Column Stores**: Data is represented as a **multidimensional map**, columns are grouped into **column families** (usually storing data of the <ins>same type</ins>), and <ins>inside each column family</ins>, data is stored **row-wise**.
+* A canonical example from the *Bigtable* is a **Webtable**. The **Conceptual structure** of the Webtable is different from how it is implemented.
+  - Conceptual structure:
+    * ![Screenshot 2024-06-03 210528](https://github.com/0xNima/Database-Internals/assets/79907489/e3c78590-de49-4794-8a8f-8dbcef21a24a)
+  - Physical Layout:
+    * ![Screenshot 2024-06-03 210751](https://github.com/0xNima/Database-Internals/assets/79907489/34465537-1ffa-4890-a6ea-ca0e88aefc9b)
+    * Column families are stored separately, but in each column family, the data belonging to the same key is stored together.
+* Examples: **BigTable**, **HBase**.
