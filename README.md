@@ -165,3 +165,58 @@ database systems**, **measure the performance metrics that are important for you
     * ![Screenshot 2024-06-03 210751](https://github.com/0xNima/Database-Internals/assets/79907489/34465537-1ffa-4890-a6ea-ca0e88aefc9b)
     * Column families are stored separately, but in each column family, the data belonging to the same key is stored together.
 * Examples: **BigTable**, **HBase**.
+<br/>
+
+#### Data Files and Index Files
+* The main reasons to use specialized file organization over flat files are:
+  - Storage efficiency
+  - Access efficiency (Records can be located in the smallest possible number of steps.)
+  - Update efficiency (Record updates are performed to minimize the number of changes on disk.)
+* Database systems store data records, consisting of multiple fields, in tables, where **each table** is usually represented as a **separate file**.
+* **Each record** in the table **can be looked up** using **a search key**
+* To locate a record, database systems use **indexes**
+* **indexes**: auxiliary data structures that allow to efficiently locate data records **without** scanning an **entire table** on every access.
+* Indexes **built** using a **subset of fields** identifying the record.
+* A database system usually **separates** **data files** and **index files**.
+  - **data files**: store data records.
+  - **index files**: store record **metadata** and use it **to locate records** in data file. These files are typically **smaller** than the data files.
+*  Files are **partitioned** into **pages**, which typically have the **size of** a **single or multiple disk blocks**.
+*  **Insertions** and **Updates** to the existing records are represented by **key/value** pairs.
+*  Most modern storage systems **do not delete data** from pages **explicitly**.
+   - They use <ins>deletion markers</ins> (also called <ins>tombstones</ins>), which contain **deletion metadata**, such as a key and a timestamp.
+   - Space occupied by the records <ins>shadowed</ins> by their **updates** or **deletion markers** is **reclaimed** during **garbage collection**:
+     + Reads the pages
+     + Writes the live (i.e., nonshadowed) records to the new place
+     + Discards the shadowed ones
+<br/>
+
+#### Data Files
+* Data files (sometimes called <ins>primary files</ins>) can be implemented as:
+  - <ins>index-organized</ins> tables (IOT)
+  - <ins>heap-organized</ins> tables (heap files)
+  - <ins>hash-organized<ins> tables (hashed files)
+* **Heap files** most of the time are placed in a **write order**.
+  - No additional work or file reorganization is required when new pages are appended
+  - Require **additional index** structures, **pointing to the locations** where data records are stored, to make them **searchable**.
+* **Hashed files** records are stored in **buckets**.
+  - **Hash value of the key** determines which bucket a record belongs to.
+  - Records in the bucket can be stored in **append order** or sorted **by key** to improve lookup speed.
+* **Index-organized tables** store data records **in the index itself**.
+  - Since records are stored in key order, **range scans in IOTs** can be implemented by sequentially scanning its contents.
+  - **Reduce the number of disk seeks** by **at least one**, since after traversing the index and locating the searched key, we **do not have to address a separate file** to find the associated data record.
+* When records are stored in a **separate file**, **index files** hold **data entries**, uniquely identifying data records and containing enough information **to locate them** in the **data file**. For example, we can store **file osets** (sometimes called <ins>row locators</ins>), **locations of data records in the data file**, or **bucket IDs** in the case of hash files.
+* In **index-organized tables**, **data entries** hold **actual data records**.
+<br/>
+
+#### Index Files
+* **Index** is a **structure** that organizes data records on disk in a way that **facilitates efficient retrieval operations**.
+* **Index files**: **specialized structures** that **map keys to**
+  - **Locations in data files** where the records identified by these keys(in the case of **heap files**) are stored.
+  - **Primary keys** (in the case of **index-organized tables**).
+* An index on a **primary (data) file** is called the **primary index**.
+  - We can also **assume that** the **primary index** is **built over** a **primary key** or a **set of keys
+identified as primary**.
+  - **All** other indexes are called **secondary**.
+* **Secondary indexes** can point directly to the **data record**, or simply **store** its **primary key**. A pointer to a data record can hold an **offset to a heap file** or an index-organized table.
+* **Primary index files** hold a **unique entry per search key**.
+* **Secondary indexes** may hold **several entries per search key**.
